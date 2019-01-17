@@ -1,0 +1,23 @@
+Create contact 
+
+curl -X POST \
+  http://localhost:8080/contact \
+  -d '{ "clientid" : 4, "broker" : "bro123", "country" : "SER", "identifier" : "id12", "language" : "ser" }'
+
+  
+Check subscription  
+
+curl -X GET \
+  'http://localhost:8080/checksubscription?clientid=1047275&subscriptiontype=METATRADER4' 
+  
+Find by any
+
+curl -X GET \
+  http://localhost:8080/findbyany/SVK
+
+ 
+Contact subscription (contactid, subscriptiontype)
+
+curl -X POST \
+  http://localhost:8080/contactsubscription \
+  -d '{ "contactid" : "8768701", "subscriptiontype": "METATRADER4"}'
