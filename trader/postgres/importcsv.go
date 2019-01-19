@@ -34,10 +34,8 @@ type ImportCsv struct {
 // NewImport represent instance of new import with given parameters
 func NewImport(dbconn *sql.DB, filename string) ImportCsv {
 	return ImportCsv{
-		db:               dbconn,
-		filename:         filename,
-		contactRepo:      NewContactRepository(dbconn),
-		subscriptionRepo: NewSubscriptionRepository(dbconn),
+		db:       dbconn,
+		filename: filename,
 	}
 }
 
@@ -80,6 +78,15 @@ func (i ImportCsv) readContactRow() {
 
 func (i ImportCsv) insertContactSubscriptionRow(row *CsvContactData) {
 
+	tx, err := i.db.Begin()
+	if err != nil {
+		log.Fatal("Error starting transaction ", err)
+	}
+	defer tx.Rollback()
+
+	i.contactRepo = NewContactRepository(tx)
+	i.subscriptionRepo = NewSubscriptionRepository(tx)
+
 	contid := i.contactRepo.GetIDByData(row.Clientid, row.Language, row.Identifier)
 	if contid == 0 {
 		clientid, _ := strconv.Atoi(row.Clientid)
@@ -107,5 +114,7 @@ func (i ImportCsv) insertContactSubscriptionRow(row *CsvContactData) {
 	if !subscriptionExists {
 		i.subscriptionRepo.CreateContactSubscription(contid, subscriptionid)
 	}
+
+	tx.Commit()
 
 }
