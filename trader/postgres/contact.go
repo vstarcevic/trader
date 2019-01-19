@@ -10,12 +10,12 @@ import (
 
 // ContactRepository represents repository
 type ContactRepository struct {
-	db *sql.DB
+	queryable Queryable
 }
 
 // NewContactRepository returns repository object
-func NewContactRepository(dbconn *sql.DB) trader.ContactRepository {
-	return &ContactRepository{db: dbconn}
+func NewContactRepository(conn Queryable) trader.ContactRepository {
+	return &ContactRepository{queryable: conn}
 }
 
 // GetByID gets Contact for given id, or error if not exists
@@ -23,7 +23,7 @@ func (co ContactRepository) GetByID(id string) (trader.Contact, error) {
 	query := `SELECT contactid, clientid, broker, country, language, identifier FROM contact WHERE contactid = $1`
 	intid, _ := strconv.Atoi(id)
 	contact := trader.Contact{Contactid: intid}
-	err := co.db.QueryRow(query, id).Scan(&contact.Contactid, &contact.Clientid, &contact.Broker, &contact.Country, &contact.Language, &contact.Identifier)
+	err := co.queryable.QueryRow(query, id).Scan(&contact.Contactid, &contact.Clientid, &contact.Broker, &contact.Country, &contact.Language, &contact.Identifier)
 
 	if err != nil {
 		empty := trader.Contact{}
@@ -45,7 +45,7 @@ func (co ContactRepository) Create(contact *trader.Contact) (int, error) {
 
 	var contactid int
 
-	err := co.db.QueryRow(query, contact.Clientid, contact.Broker, contact.Country, contact.Language, contact.Identifier).Scan(&contactid)
+	err := co.queryable.QueryRow(query, contact.Clientid, contact.Broker, contact.Country, contact.Language, contact.Identifier).Scan(&contactid)
 
 	if err != nil {
 		return 0, err
@@ -63,7 +63,7 @@ func (co ContactRepository) GetIDByData(clientid string, language string, identi
 
 	var contactid int
 
-	err := co.db.QueryRow(query, clientid, language, identifier).Scan(&contactid)
+	err := co.queryable.QueryRow(query, clientid, language, identifier).Scan(&contactid)
 
 	if err != nil {
 		return 0

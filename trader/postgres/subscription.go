@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"database/sql"
 	"log"
 
 	"github.com/vstarcevic/trader/trader"
@@ -9,13 +8,12 @@ import (
 
 // SubscriptionRepository represent repository
 type SubscriptionRepository struct {
-	db *sql.DB
-	tr *sql.Tx
+	queryable Queryable
 }
 
 // NewSubscriptionRepository returns repository object
-func NewSubscriptionRepository(dbconn *sql.DB) trader.SubscriptionRepository {
-	return &SubscriptionRepository{db: dbconn}
+func NewSubscriptionRepository(conn Queryable) trader.SubscriptionRepository {
+	return &SubscriptionRepository{queryable: conn}
 }
 
 // CheckSubscription checks if subscription exists for given clientid and subscription type
@@ -30,7 +28,7 @@ func (sup SubscriptionRepository) CheckSubscription(clientid string, subscriptio
 
 	var result int
 
-	err := sup.db.QueryRow(q, clientid, subscriptionType).Scan(&result)
+	err := sup.queryable.QueryRow(q, clientid, subscriptionType).Scan(&result)
 
 	if err != nil {
 		return false, err
@@ -49,7 +47,7 @@ func (sup SubscriptionRepository) CheckSubscriptionByIDs(contactid int, subscrip
 
 	var result int
 
-	err := sup.db.QueryRow(q, contactid, subscriptionid).Scan(&result)
+	err := sup.queryable.QueryRow(q, contactid, subscriptionid).Scan(&result)
 
 	if err != nil {
 		return false, err
@@ -68,7 +66,7 @@ func (sup SubscriptionRepository) GetSubscriptionTypeIDFromName(name string) int
 
 	var subscriptionTypeid int
 
-	err := sup.db.QueryRow(query, name).Scan(&subscriptionTypeid)
+	err := sup.queryable.QueryRow(query, name).Scan(&subscriptionTypeid)
 
 	if err != nil {
 		return 0
@@ -83,7 +81,7 @@ func (sup SubscriptionRepository) GetSubscriptionIDByTypeAndAccount(subscription
 
 	var subscriptionid int
 
-	err := sup.db.QueryRow(query, subscriptionTypeid, account).Scan(&subscriptionid)
+	err := sup.queryable.QueryRow(query, subscriptionTypeid, account).Scan(&subscriptionid)
 
 	if err != nil {
 		return 0
@@ -101,7 +99,7 @@ func (sup SubscriptionRepository) CreateType(name string) (int, error) {
 
 	var subscriptionTypeid int
 
-	err := sup.db.QueryRow(query, name).Scan(&subscriptionTypeid)
+	err := sup.queryable.QueryRow(query, name).Scan(&subscriptionTypeid)
 
 	if err != nil {
 		return 0, err
@@ -120,7 +118,7 @@ func (sup SubscriptionRepository) Create(subscription *trader.Subscription) (int
 
 	var subsid int
 
-	err := sup.db.QueryRow(query, subscription.Subscriptiontypeid, subscription.Account).Scan(&subsid)
+	err := sup.queryable.QueryRow(query, subscription.Subscriptiontypeid, subscription.Account).Scan(&subsid)
 
 	if err != nil {
 		return 0, err
@@ -135,7 +133,7 @@ func (sup SubscriptionRepository) CreateContactSubscription(contactid int, subsc
 	q := `INSERT INTO contactSubscription (contactid,subscriptionid)
 	VALUES ($1, $2)`
 
-	_, err := sup.db.Exec(q, contactid, subscriptionid)
+	_, err := sup.queryable.Exec(q, contactid, subscriptionid)
 
 	return err
 
@@ -193,7 +191,7 @@ func (sup SubscriptionRepository) FindByAny(search string) ([]trader.ContactSubs
 	WHERE st.name = $1
 	`
 
-	rows, err := sup.db.Query(q, search)
+	rows, err := sup.queryable.Query(q, search)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -235,7 +233,7 @@ func (sup SubscriptionRepository) GetFirstSubscriptionForType(subscriptionTypeid
 
 	var subscriptionid int
 
-	err := sup.db.QueryRow(query, subscriptionTypeid).Scan(&subscriptionid)
+	err := sup.queryable.QueryRow(query, subscriptionTypeid).Scan(&subscriptionid)
 
 	if err != nil {
 		return 0
