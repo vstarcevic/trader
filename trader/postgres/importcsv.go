@@ -9,7 +9,12 @@ import (
 	"os"
 	"strconv"
 
+	limit "github.com/korovkin/limiter"
 	"github.com/vstarcevic/trader/trader"
+)
+
+const (
+	concurentConnections = 5
 )
 
 // CsvContactData represent one row in CSV file
@@ -29,6 +34,7 @@ type ImportCsv struct {
 	filename         string
 	contactRepo      trader.ContactRepository
 	subscriptionRepo trader.SubscriptionRepository
+	concLimiter      *limit.ConcurrencyLimiter
 }
 
 // NewImport represent instance of new import with given parameters
@@ -41,6 +47,7 @@ func NewImport(dbconn *sql.DB, filename string) ImportCsv {
 
 // ImportContactData imports rows into corresponding tables in db
 func (i ImportCsv) ImportContactData() {
+	i.concLimiter = limit.NewConcurrencyLimiter(concurentConnections)
 	go i.readContactRow()
 }
 
@@ -70,8 +77,9 @@ func (i ImportCsv) readContactRow() {
 			SubscriptionType: line[5],
 			AccountCode:      line[6]}
 
-		i.insertContactSubscriptionRow(&row)
-
+		i.concLimiter.Execute(func() {
+			i.insertContactSubscriptionRow(&row)
+		})
 	}
 
 }
